@@ -7,6 +7,12 @@ from django.db import transaction
 from .models import Train, TrainStop, Booking
 
 
+from django.shortcuts import render
+
+def home(request):
+    return render(request, "tickets/index.html")
+
+
 @require_http_methods(["GET"])
 def trains_list(request):
     source_code = request.GET.get("source")
@@ -30,8 +36,18 @@ def trains_list(request):
         # if search params provided
         if source_code and dest_code:
             try:
-                source_stop = stops.get(station__code=source_code)
-                dest_stop = stops.get(station__code=dest_code)
+                source_stop = stops.get(
+    station__code__iexact=source_code
+) or stops.get(
+    station__name__iexact=source_code
+)
+
+                dest_stop = stops.get(
+    station__code__iexact=dest_code
+) or stops.get(
+    station__name__iexact=dest_code
+)
+
             except TrainStop.DoesNotExist:
                 continue
 

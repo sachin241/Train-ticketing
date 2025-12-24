@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Train Ticket Reservation System</title>
+  <style>
+   * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: #ffffff; 
+  color: #000000;
+  padding: 20px;
+}
+
+.division1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.main_heading {
+  font-size: 2.5em;
+  color: #000000; 
+  margin-bottom: 10px;
+}
+
+.division1 p {
+  font-size: 1.2em;
+  color: #333333; 
+}
+.division2 {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.division2 h2 {
+  margin-bottom: 15px;
+  color: #000000;
+}
+
+.division2 input {
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #000000;
+  border-radius: 5px;
+  width: 150px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.division2 button {
+  padding: 10px 20px;
+  background-color: #000000; 
+  color: #ffffff;            
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.division2 button:hover {
+  background-color: #ffffff; 
+  color: #000000;
+  border: 1px solid #000000;
+}
+.division3, .division4 {
+  margin-bottom: 30px;
+}
+
+.division3 h2, .division4 h2 {
+  margin-bottom: 15px;
+  color: #000000;
+}
+
+.train-card, .booking-card {
+  background-color: #ffffff;
+  border: 1px solid #000000; 
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.train-card button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.train-card button:hover {
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+}
+  </style>
+
+</head>
+<body>
+
+  <div class="division1">
+    <h1 class="main_heading">Railway Ticket Reservation</h1>
+    <p>Book your train in seconds</p>
+  </div>
+
+  <div class="division2">
+    <h2>Search Trains</h2>
+    <input type="text" id="source" placeholder="Source">
+    <input type="text" id="destination" placeholder="Destination">
+    <button id="searchBtn">Search</button>
+  </div>
+
+<div class="division3">
+  <h2>Available Trains</h2>
+  <div id="trainList" class="innerdiv1">
+  </div>
+</div>
+
+<div class="division4">
+  <h2>My Bookings</h2>
+  <div id="bookingHistory">
+  </div>
+</div>
+
+ <script>
+  const trainListDiv = document.getElementById("trainList");
+const bookingHistoryDiv = document.getElementById("bookingHistory");
+const searchBtn = document.getElementById("searchBtn");
+
+const sourceInput = document.getElementById("source");
+const destinationInput = document.getElementById("destination");
+
+/* -------------------------------
+   LOAD ALL TRAINS (ON PAGE LOAD)
+-------------------------------- */
+async function loadTrains(source = "", destination = "") {
+  let url = "/trains/";
+
+  if (source && destination) {
+    url += `?source=${source}&destination=${destination}`;
+  }
+
+  const res = await fetch(url);
+  const trains = await res.json();
+
+  trainListDiv.innerHTML = "";
+
+  if (trains.length === 0) {
+    trainListDiv.innerHTML = "<p>No trains found.</p>";
+    return;
+  }
+
+  trains.forEach(train => {
+    const div = document.createElement("div");
+    div.className = "train-card";
+
+    div.innerHTML = `
+      <h3>${train.train_name} (${train.train_number})</h3>
+      <p>${train.source} → ${train.destination}</p>
+      <p>Available Seats: ${train.available_seats}</p>
+      <input type="text" placeholder="Passenger Name" id="name-${train.id}">
+      <button ${train.available_seats === 0 ? "disabled" : ""} 
+              onclick="bookTicket(${train.id})">
+        Book
+      </button>
+    `;
+
+    trainListDiv.appendChild(div);
+  });
+}
+
+/* -------------------------------
+   BOOK TICKET
+-------------------------------- */
+async function bookTicket(trainId) {
+  const nameInput = document.getElementById(`name-${trainId}`);
+  const passengerName = nameInput.value.trim();
+
+  if (!passengerName) {
+    alert("Enter passenger name");
+    return;
+  }
+
+  const res = await fetch("/book/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      passenger_name: passengerName,
+      train_id: trainId
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Booking failed");
+    return;
+  }
+
+  alert(`Booked! Seat No: ${data.seat_number}`);
+
+  nameInput.value = "";
+
+  loadTrains(sourceInput.value, destinationInput.value);
+  loadBookings();
+}
+
+/* -------------------------------
+   LOAD BOOKINGS
+-------------------------------- */
+async function loadBookings() {
+  const res = await fetch("/bookings/");
+  const bookings = await res.json();
+
+  bookingHistoryDiv.innerHTML = "";
+
+  if (bookings.length === 0) {
+    bookingHistoryDiv.innerHTML = "<p>No bookings yet.</p>";
+    return;
+  }
+
+  bookings.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "booking-card";
+
+    div.innerHTML = `
+      <p><strong>${b.passenger_name}</strong></p>
+      <p>${b.train_name}</p>
+      <p>Seat: ${b.seat_number}</p>
+      <p>${b.booking_date}</p>
+      <hr>
+    `;
+
+    bookingHistoryDiv.appendChild(div);
+  });
+}
+
+/* -------------------------------
+   SEARCH BUTTON
+-------------------------------- */
+searchBtn.addEventListener("click", () => {
+  const source = sourceInput.value.trim();
+  const destination = destinationInput.value.trim();
+
+  if (!source || !destination) {
+    alert("Enter both source and destination station codes");
+    return;
+  }
+
+  loadTrains(source, destination);
+});
+
+/* -------------------------------
+   INITIAL LOAD
+-------------------------------- */
+loadTrains();
+loadBookings();
+
+ </script>
+</body>
+</html>
