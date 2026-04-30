@@ -5,9 +5,6 @@ const searchBtn = document.getElementById("searchBtn");
 const sourceInput = document.getElementById("source");
 const destinationInput = document.getElementById("destination");
 
-/* -------------------------------
-   LOAD ALL TRAINS (ON PAGE LOAD)
--------------------------------- */
 async function loadTrains(source = "", destination = "") {
   let url = "/trains/";
 
@@ -25,17 +22,16 @@ async function loadTrains(source = "", destination = "") {
     return;
   }
 
-  trains.forEach(train => {
+  trains.forEach((train) => {
     const div = document.createElement("div");
     div.className = "train-card";
 
     div.innerHTML = `
       <h3>${train.train_name} (${train.train_number})</h3>
-      <p>${train.source} → ${train.destination}</p>
+      <p>${train.source} &rarr; ${train.destination}</p>
       <p>Available Seats: ${train.available_seats}</p>
       <input type="text" placeholder="Passenger Name" id="name-${train.id}">
-      <button ${train.available_seats === 0 ? "disabled" : ""} 
-              onclick="bookTicket(${train.id})">
+      <button ${train.available_seats === 0 ? "disabled" : ""} onclick="bookTicket(${train.id})">
         Book
       </button>
     `;
@@ -44,9 +40,6 @@ async function loadTrains(source = "", destination = "") {
   });
 }
 
-/* -------------------------------
-   BOOK TICKET
--------------------------------- */
 async function bookTicket(trainId) {
   const nameInput = document.getElementById(`name-${trainId}`);
   const passengerName = nameInput.value.trim();
@@ -59,12 +52,12 @@ async function bookTicket(trainId) {
   const res = await fetch("/book/", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       passenger_name: passengerName,
-      train_id: trainId
-    })
+      train_id: trainId,
+    }),
   });
 
   const data = await res.json();
@@ -82,9 +75,6 @@ async function bookTicket(trainId) {
   loadBookings();
 }
 
-/* -------------------------------
-   LOAD BOOKINGS
--------------------------------- */
 async function loadBookings() {
   const res = await fetch("/bookings/");
   const bookings = await res.json();
@@ -96,15 +86,15 @@ async function loadBookings() {
     return;
   }
 
-  bookings.forEach(b => {
+  bookings.forEach((booking) => {
     const div = document.createElement("div");
     div.className = "booking-card";
 
     div.innerHTML = `
-      <p><strong>${b.passenger_name}</strong></p>
-      <p>${b.train_name}</p>
-      <p>Seat: ${b.seat_number}</p>
-      <p>${b.booking_date}</p>
+      <p><strong>${booking.passenger_name}</strong></p>
+      <p>${booking.train_name}</p>
+      <p>Seat: ${booking.seat_number}</p>
+      <p>${booking.booking_date}</p>
       <hr>
     `;
 
@@ -112,9 +102,6 @@ async function loadBookings() {
   });
 }
 
-/* -------------------------------
-   SEARCH BUTTON
--------------------------------- */
 searchBtn.addEventListener("click", () => {
   const source = sourceInput.value.trim();
   const destination = destinationInput.value.trim();
@@ -127,8 +114,5 @@ searchBtn.addEventListener("click", () => {
   loadTrains(source, destination);
 });
 
-/* -------------------------------
-   INITIAL LOAD
--------------------------------- */
 loadTrains();
 loadBookings();
